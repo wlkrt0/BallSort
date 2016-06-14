@@ -9,6 +9,14 @@ public class Enums {
         BLUE
     }
 
+    public enum BallState {
+        CHUTE,
+        RAMP,
+        FALLING,
+        CAUGHT,
+        MISSED
+    }
+
     public enum ValveState {
         OPEN,
         CLOSED
