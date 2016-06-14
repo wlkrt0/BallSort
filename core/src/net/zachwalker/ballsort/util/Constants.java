@@ -4,6 +4,8 @@ import com.badlogic.gdx.graphics.Color;
 
 
 public final class Constants {
+    public static final String LOG_TAG = "BallSort";
+
     public static final int WORLD_WIDTH = 222;
     public static final int WORLD_HEIGHT = 125;
     public static final Color BACKGROUND_COLOR = Color.BLACK;
@@ -31,9 +33,22 @@ public final class Constants {
     public static final Color BUCKET_MIDDLE_COLOR = Color.YELLOW;
     public static final Color BUCKET_RIGHT_COLOR = Color.BLUE;
 
-    public static final String SCORE_LABEL = "Score: ";
+    public static final String SCORE_LABEL = "";
     public static final float SCORE_FONT_SCALE = 200.0f;
+    public static final String COMBO_LABEL = "x COMBO";
+    public static final float COMBO_MARGIN = 420.0f;
 
     public static final Color TOUCHTARGET_COLOR = Color.GREEN;
 
+    public static final String SOUND_NEWBALL = "newball.wav";
+    public static final String SOUND_VALVE = "valve.wav";
+    public static final String SOUND_MISSED = "missed.wav";
+    public static final String SOUND_CAUGHT1 = "caught1.wav";
+    public static final String SOUND_CAUGHT2 = "caught2.wav";
+    public static final String SOUND_CAUGHT3 = "caught3.wav";
+    public static final String SOUND_CAUGHT4 = "caught4.wav";
+    public static final String SOUND_CAUGHT5 = "caught5.wav";
+    public static final String SOUND_CAUGHT6 = "caught6.wav";
+    public static final String SOUND_CAUGHT7 = "caught7.wav";
+    public static final String SOUND_CAUGHT8 = "caught8.wav";
 }

@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.Viewport;
+
+import net.zachwalker.ballsort.util.Assets;
 import net.zachwalker.ballsort.util.Constants;
 
 
@@ -15,13 +17,15 @@ public class TouchTargets extends InputAdapter{
     Viewport viewport;
     Array<Chute> touchTargets;
     Array<Valve> valves;
+    Assets assets;
 
     //make sure to initialize touchtargets AFTER valves have been created
     //note that we need to pass the viewport to the valve since it will be receiving touches
     //and will need to unproject the touch input using the viewport
-    public TouchTargets(Viewport viewport, Array<Valve> valves) {
+    public TouchTargets(Viewport viewport, Array<Valve> valves, Assets assets) {
         this.viewport = viewport;
         this.valves = valves;
+        this.assets = assets;
         touchTargets = new Array<Chute>();
         for (Valve valve : valves) {
             touchTargets.add(new Chute(
@@ -35,6 +39,7 @@ public class TouchTargets extends InputAdapter{
         }
     }
 
+    //TODO clean up this method
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         Vector2 viewportPosition = viewport.unproject(new Vector2(screenX, screenY));
@@ -46,6 +51,7 @@ public class TouchTargets extends InputAdapter{
             float radius = Math.min(touchTargets.get(i).width, touchTargets.get(i).height) / 2.0f;
             if (viewportPosition.dst(touchTargetCenter) <= radius) {
                 valves.get(i).switchValveState();
+                assets.sounds.valve.play();
             }
         }
         return true;

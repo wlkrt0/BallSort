@@ -17,6 +17,7 @@ import net.zachwalker.ballsort.entities.Chute;
 import net.zachwalker.ballsort.entities.TouchTargets;
 import net.zachwalker.ballsort.entities.Valve;
 import net.zachwalker.ballsort.overlays.Score;
+import net.zachwalker.ballsort.util.Assets;
 import net.zachwalker.ballsort.util.Constants;
 import net.zachwalker.ballsort.entities.Ball;
 import net.zachwalker.ballsort.util.Enums;
@@ -24,6 +25,7 @@ import net.zachwalker.ballsort.util.Enums;
 
 public class BallSortScreen extends ScreenAdapter {
 
+    private Assets assets;
     private Viewport viewport;
     private ShapeRenderer renderer;
     private SpriteBatch batch;
@@ -35,6 +37,7 @@ public class BallSortScreen extends ScreenAdapter {
     private long currentScore;
     private long lastBallSpawnedTime;
     private float nextBallSpawnInterval;
+    private int combo;
 
     public BallSortScreen() {
         //the superclass doesn't do anything in its constructor either
@@ -44,6 +47,7 @@ public class BallSortScreen extends ScreenAdapter {
 
     @Override
     public void show() {
+        assets = new Assets();
         viewport = new ExtendViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
         renderer = new ShapeRenderer();
         batch = new SpriteBatch();
@@ -52,10 +56,11 @@ public class BallSortScreen extends ScreenAdapter {
         initializeChutes();
         valves = new Array<Valve>();
         initializeValves();
-        //note that touch targets must be initalized AFTER valves
+        //note that touch targets must be initalized AFTER valves AND assets
         //also note that we need to pass the viewport to the touchtargets class since it will be
         //receiving touches and will need to unproject the touch input using the viewport
-        touchTargets = new TouchTargets(viewport, valves);
+        //also need to pass in assets since it will be playing sounds when valves are toggled
+        touchTargets = new TouchTargets(viewport, valves, assets);
         Gdx.input.setInputProcessor(touchTargets);
         score = new Score();
         lastBallSpawnedTime = TimeUtils.nanoTime();
@@ -68,6 +73,7 @@ public class BallSortScreen extends ScreenAdapter {
         float elapsedSeconds = MathUtils.nanoToSec * (TimeUtils.nanoTime() - lastBallSpawnedTime);
         if (elapsedSeconds >= nextBallSpawnInterval) {
             balls.add(new Ball());
+            assets.sounds.newBall.play();
             lastBallSpawnedTime = TimeUtils.nanoTime();
             nextBallSpawnInterval = MathUtils.random(Constants.BALL_SPAWN_INTERVAL_MIN, Constants.BALL_SPAWN_INTERVAL_MAX);
         }
@@ -78,10 +84,14 @@ public class BallSortScreen extends ScreenAdapter {
             //they've arrived at a valve which is open
             ball.update(delta, valves);
             if (ball.ballState == Enums.BallState.CAUGHT) {
-                currentScore += 1;
+                combo += 1;
+                currentScore += combo;
+                playComboSound();
                 balls.removeValue(ball, false);
             } else if (ball.ballState == Enums.BallState.MISSED) {
+                assets.sounds.missed.play();
                 balls.removeValue(ball, false);
+                combo = 0;
             }
         }
         balls.end();
@@ -112,7 +122,7 @@ public class BallSortScreen extends ScreenAdapter {
 
         touchTargets.render(renderer);
 
-        score.render(batch, currentScore);
+        score.render(batch, currentScore, combo);
     }
 
     @Override
@@ -123,7 +133,36 @@ public class BallSortScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
-        //make sure to dispose of any texture / sound assets here in the future
+        batch.dispose();
+    }
+
+    private void playComboSound() {
+        switch (combo) {
+            case 1:
+                assets.sounds.caught1.play();
+                break;
+            case 2:
+                assets.sounds.caught2.play();
+                break;
+            case 3:
+                assets.sounds.caught3.play();
+                break;
+            case 4:
+                assets.sounds.caught4.play();
+                break;
+            case 5:
+                assets.sounds.caught5.play();
+                break;
+            case 6:
+                assets.sounds.caught6.play();
+                break;
+            case 7:
+                assets.sounds.caught7.play();
+                break;
+            default:
+                assets.sounds.caught8.play();
+                break;
+        }
     }
 
     private void initializeValves() {

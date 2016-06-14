@@ -72,6 +72,7 @@ public class Ball {
         velocity.x = 0.0f;
         velocity.y = Constants.BALL_SPEED;
         position.mulAdd(velocity, delta);
+        //start moving to the right if the ball has reached the top of the chute
         if (position.y > Constants.CHUTE_HEIGHT + Constants.BALL_SIZE) {
             ballState = Enums.BallState.RAMP;
         }
@@ -91,6 +92,8 @@ public class Ball {
         velocity.x = 0.0f;
         velocity.y -= Constants.GRAVITY;
         position.mulAdd(velocity, delta);
+        //flag the ball for removal by BallSortScreen if it's caught or missed
+        //BallSortScreen handles any scoring that's needed
         if (position.y <= 0.0f) {
             if (inCorrectBucket()) {
                 ballState = Enums.BallState.CAUGHT;

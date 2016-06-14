@@ -14,8 +14,6 @@ public class Valve {
     float height;
     Enums.ValveState valveState;
 
-    //note that we need to pass the viewport to the valve since it will be receiving touches
-    //and will need to unproject the touch input using the viewport
     public Valve(float positionX) {
         this.positionX = positionX;
         positionY = Constants.CHUTE_HEIGHT;
