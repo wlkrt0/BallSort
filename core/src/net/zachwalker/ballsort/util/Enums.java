@@ -17,6 +17,13 @@ public class Enums {
         MISSED
     }
 
+    public enum BallFellThru {
+        NONE,
+        LEFT_VALVE,
+        RIGHT_VALVE,
+        END
+    }
+
     public enum ValveState {
         OPEN,
         CLOSED

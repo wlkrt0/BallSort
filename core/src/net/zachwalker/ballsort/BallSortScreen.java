@@ -2,18 +2,19 @@ package net.zachwalker.ballsort;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.DelayedRemovalArray;
 import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-
-import net.zachwalker.ballsort.entities.Bucket;
 import net.zachwalker.ballsort.entities.Chute;
-import net.zachwalker.ballsort.entities.Ramp;
+import net.zachwalker.ballsort.entities.TouchTargets;
 import net.zachwalker.ballsort.entities.Valve;
 import net.zachwalker.ballsort.overlays.Score;
 import net.zachwalker.ballsort.util.Constants;
@@ -27,10 +28,9 @@ public class BallSortScreen extends ScreenAdapter {
     private ShapeRenderer renderer;
     private SpriteBatch batch;
     private DelayedRemovalArray<Ball> balls;
-    private Chute chute;
-    private Ramp ramp;
-    private Valve valve;
-    private Bucket bucket;
+    private Array<Chute> chutes;
+    private Array<Valve> valves;
+    private TouchTargets touchTargets;
     private Score score;
     private long currentScore;
     private long lastBallSpawnedTime;
@@ -44,18 +44,20 @@ public class BallSortScreen extends ScreenAdapter {
 
     @Override
     public void show() {
-        viewport = new ExtendViewport(Constants.WORLD_SIZE, Constants.WORLD_SIZE);
+        viewport = new ExtendViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
         renderer = new ShapeRenderer();
         batch = new SpriteBatch();
         balls = new DelayedRemovalArray<Ball>();
-        chute = new Chute();
-        ramp = new Ramp();
-        //note that we need to pass the viewport to the valve since it will be receiving touches
-        //and will need to unproject the touch input using the viewport
-        valve = new Valve(viewport);
-        bucket = new Bucket();
+        chutes = new Array<Chute>();
+        initializeChutes();
+        valves = new Array<Valve>();
+        initializeValves();
+        //note that touch targets must be initalized AFTER valves
+        //also note that we need to pass the viewport to the touchtargets class since it will be
+        //receiving touches and will need to unproject the touch input using the viewport
+        touchTargets = new TouchTargets(viewport, valves);
+        Gdx.input.setInputProcessor(touchTargets);
         score = new Score();
-        Gdx.input.setInputProcessor(valve);
         lastBallSpawnedTime = TimeUtils.nanoTime();
         nextBallSpawnInterval = Constants.BALL_SPAWN_INTERVAL_MIN;
     }
@@ -74,7 +76,7 @@ public class BallSortScreen extends ScreenAdapter {
         for (Ball ball : balls) {
             //note that we need to pass the valve to each ball so that the balls can check whether
             //they've arrived at a valve which is open
-            ball.update(delta, valve);
+            ball.update(delta, valves);
             if (ball.ballState == Enums.BallState.CAUGHT) {
                 currentScore += 1;
                 balls.removeValue(ball, false);
@@ -100,10 +102,15 @@ public class BallSortScreen extends ScreenAdapter {
             ball.render(renderer);
         }
 
-        chute.render(renderer);
-        ramp.render(renderer);
-        valve.render(renderer);
-        bucket.render(renderer);
+        for (Chute chute : chutes) {
+            chute.render(renderer);
+        }
+
+        for (Valve valve : valves) {
+            valve.render(renderer);
+        }
+
+        touchTargets.render(renderer);
 
         score.render(batch, currentScore);
     }
@@ -117,5 +124,78 @@ public class BallSortScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         //make sure to dispose of any texture / sound assets here in the future
+    }
+
+    private void initializeValves() {
+        //draw the left valve
+        valves.add(new Valve(Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH));
+        //draw the right valve
+        valves.add(new Valve(Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) + Constants.VALVE_WIDTH));
+    }
+
+    private void initializeChutes() {
+        //draw the vertical chute
+        chutes.add(new Chute(
+                Constants.CHUTE_MARGIN,
+                0.0f,
+                Constants.CHUTE_WIDTH,
+                Constants.CHUTE_HEIGHT,
+                ShapeType.Line,
+                Color.GRAY)
+        );
+        //draw the left horizontal chute
+        chutes.add(new Chute(
+                Constants.CHUTE_MARGIN,
+                Constants.CHUTE_HEIGHT,
+                Constants.RAMP_WIDTH,
+                Constants.CHUTE_WIDTH,
+                ShapeType.Line,
+                Color.GRAY)
+        );
+        //draw the middle horizontal chute
+        chutes.add(new Chute(
+                Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.VALVE_WIDTH,
+                Constants.CHUTE_HEIGHT,
+                Constants.RAMP_WIDTH,
+                Constants.CHUTE_WIDTH,
+                ShapeType.Line,
+                Color.GRAY)
+        );
+        //draw the right horizontal chute
+        chutes.add(new Chute(
+                Constants.CHUTE_MARGIN + (2.0f * (Constants.RAMP_WIDTH + Constants.VALVE_WIDTH)),
+                Constants.CHUTE_HEIGHT,
+                Constants.RAMP_WIDTH,
+                Constants.CHUTE_WIDTH,
+                ShapeType.Line,
+                Color.GRAY)
+        );
+        //draw the left bucket
+        chutes.add(new Chute(
+                Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.BALL_SIZE - (Constants.BUCKET_WIDTH / 2.0f),
+                0.0f,
+                Constants.BUCKET_WIDTH,
+                Constants.BUCKET_HEIGHT,
+                ShapeType.Filled,
+                Constants.BUCKET_LEFT_COLOR)
+        );
+        //draw the middle bucket
+        chutes.add(new Chute(
+                Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) + Constants.VALVE_WIDTH + Constants.BALL_SIZE - (Constants.BUCKET_WIDTH / 2.0f),
+                0.0f,
+                Constants.BUCKET_WIDTH,
+                Constants.BUCKET_HEIGHT,
+                ShapeType.Filled,
+                Constants.BUCKET_MIDDLE_COLOR)
+        );
+        //draw the right bucket
+        chutes.add(new Chute(
+                Constants.CHUTE_MARGIN + (3.0f * Constants.RAMP_WIDTH) + (2.0f * Constants.VALVE_WIDTH) + Constants.BALL_SIZE - (Constants.BUCKET_WIDTH / 2.0f),
+                0.0f,
+                Constants.BUCKET_WIDTH,
+                Constants.BUCKET_HEIGHT,
+                ShapeType.Filled,
+                Constants.BUCKET_RIGHT_COLOR)
+        );
     }
 }
