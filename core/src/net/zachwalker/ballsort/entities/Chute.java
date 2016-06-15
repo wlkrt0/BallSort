@@ -13,7 +13,7 @@ public class Chute {
     float width;
     float height;
     private ShapeType shapeType;
-    private Color color;
+    Color color;
 
     public Chute(float x, float y, float width, float height, ShapeType fillType, Color color) {
         positionX = x;
@@ -31,10 +31,6 @@ public class Chute {
         renderer.setColor(color);
         renderer.rect(positionX, positionY, width, height);
         renderer.end();
-    }
-
-    public float getWidth() {
-        return width;
     }
 
 }

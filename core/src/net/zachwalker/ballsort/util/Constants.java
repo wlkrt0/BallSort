@@ -5,6 +5,8 @@ import com.badlogic.gdx.graphics.Color;
 
 public final class Constants {
     public static final String LOG_TAG = "BallSort";
+    public static final String PREF_HIGH_SCORE = "highscore";
+    public static final String PREF_HIGH_LEVEL = "highlevel";
 
     public static final int WORLD_WIDTH = 222;
     public static final int WORLD_HEIGHT = 125;
@@ -36,6 +38,7 @@ public final class Constants {
 
     public static final float SCORE_FONT_SCALE = 200.0f;
     public static final String SCORE_LABEL = "";
+    public static final String HIGH_SCORE_LABEL = "";
     public static final String LEVEL_LABEL = "LVL ";
     public static final String COMBO_LABEL = "x";
 
@@ -55,4 +58,12 @@ public final class Constants {
     public static final String SOUND_CAUGHT6 = "caught6.wav";
     public static final String SOUND_CAUGHT7 = "caught7.wav";
     public static final String SOUND_CAUGHT8 = "caught8.wav";
+    public static final String SOUND_CAUGHT9 = "caught9.wav";
+    public static final String SOUND_CAUGHT10 = "caught10.wav";
+    public static final String SOUND_CAUGHT11 = "caught11.wav";
+    public static final String SOUND_CAUGHT12 = "caught12.wav";
+    public static final String SOUND_CAUGHT13 = "caught13.wav";
+    public static final String SOUND_CAUGHT14 = "caught14.wav";
+    public static final String SOUND_CAUGHT15 = "caught15.wav";
+    public static final String SOUND_CAUGHT16 = "caught16.wav";
 }

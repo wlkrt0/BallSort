@@ -1,6 +1,7 @@
 package net.zachwalker.ballsort;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -38,11 +39,14 @@ public class BallSortScreen extends ScreenAdapter {
     private Score score;
     private Enums.GameState gameState;
     private long currentScore;
+    private long highScore;
+    private int level;
+    private int highLevel;
     private long lastBallSpawnedTime;
     private float nextBallSpawnInterval;
     private int combo;
-    private int level;
     private long levelChangeStartedTime;
+    private Preferences preferences;
 
     public BallSortScreen() {
         //the superclass doesn't do anything in its constructor either
@@ -52,7 +56,7 @@ public class BallSortScreen extends ScreenAdapter {
 
     @Override
     public void show() {
-        level = 19;
+        level = 1;
         assets = new Assets();
         viewport = new ExtendViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
         renderer = new ShapeRenderer();
@@ -70,11 +74,15 @@ public class BallSortScreen extends ScreenAdapter {
         //also note that we need to pass the viewport to the touchtargets class since it will be
         //receiving touches and will need to unproject the touch input using the viewport
         //also need to pass in assets since it will be playing sounds when valves are toggled
-        touchTargets = new TouchTargets(viewport, valves, assets);
+        //also need to pass in this instance of BallSortScreen so it can call gotoHighLevel()
+        touchTargets = new TouchTargets(viewport, valves, assets, this);
         Gdx.input.setInputProcessor(touchTargets);
         score = new Score();
         gameState = Enums.GameState.PLAYING_NORMAL;
         lastBallSpawnedTime = TimeUtils.nanoTime();
+        preferences = Gdx.app.getPreferences(this.getClass().getPackage().getName() + ".preferences");
+        highScore = preferences.getLong(Constants.PREF_HIGH_SCORE);
+        highLevel = preferences.getInteger(Constants.PREF_HIGH_LEVEL);
     }
 
     @Override
@@ -86,7 +94,10 @@ public class BallSortScreen extends ScreenAdapter {
                 removeBalls(delta);
                 break;
             case GOTO_NEXT_LEVEL:
-                //reset balls, buckets, and combo. increment the level and start the timer.
+                assets.sounds.playSound(assets.sounds.newLevel);
+                //save the current highScore and highLevel
+                saveGame();
+                //reset balls, buckets, and combo. increment the level and start the next level timer.
                 combo = 0;
                 level += 1;
                 balls.clear();
@@ -103,7 +114,9 @@ public class BallSortScreen extends ScreenAdapter {
                 break;
             case GAME_OVER:
                 //similar to GOTO_NEXT_LEVEL
-                assets.sounds.gameOver.play();
+                saveGame();
+                assets.sounds.playSound(assets.sounds.gameOver);
+                //reset balls, buckets, combo, score, and level and start the next level timer.
                 currentScore = 0;
                 combo = 0;
                 level = 1;
@@ -146,7 +159,7 @@ public class BallSortScreen extends ScreenAdapter {
 
         touchTargets.render(renderer);
 
-        score.render(batch, currentScore, level, combo);
+        score.render(batch, currentScore, highScore, level, combo);
     }
 
     @Override
@@ -164,9 +177,10 @@ public class BallSortScreen extends ScreenAdapter {
         float elapsedSeconds = MathUtils.nanoToSec * (TimeUtils.nanoTime() - lastBallSpawnedTime);
         if (elapsedSeconds >= nextBallSpawnInterval) {
             balls.add(new Ball());
-            assets.sounds.newBall.play();
+            assets.sounds.playSound(assets.sounds.newBall);
             lastBallSpawnedTime = TimeUtils.nanoTime();
             double x = (double) level;
+            //refer to google sheets spreadsheet for origin of these two ugly formulas (curve fit)
             double nextMinBallSpawnInterval = Math.max(-0.01d * Math.pow(x, 3.0d) + 0.291d * Math.pow(x, 2.0d) - 2.796d * x + 10.516d, Constants.BALL_SPAWN_INTERVAL_MIN);
             double nextMaxBallSpawnInterval = Math.max(8.849d * Math.pow(Math.E, (x * -0.094d)), Constants.BALL_SPAWN_INTERVAL_MIN);
             nextBallSpawnInterval = MathUtils.random((float) nextMinBallSpawnInterval, (float) nextMaxBallSpawnInterval);
@@ -186,22 +200,21 @@ public class BallSortScreen extends ScreenAdapter {
                 balls.removeValue(ball, false);
                 switch (ball.fellThru) {
                     case LEFT_VALVE:
-                        if (buckets.get(0).caughtBall()) assets.sounds.full.play();
+                        if (buckets.get(0).caughtBall()) assets.sounds.playSound(assets.sounds.full);
                         break;
                     case RIGHT_VALVE:
-                        if (buckets.get(1).caughtBall()) assets.sounds.full.play();
+                        if (buckets.get(1).caughtBall()) assets.sounds.playSound(assets.sounds.full);
                         break;
                     case END:
-                        if (buckets.get(2).caughtBall()) assets.sounds.full.play();
+                        if (buckets.get(2).caughtBall()) assets.sounds.playSound(assets.sounds.full);
                         break;
                 }
                 //if all three buckets are now full, start a new level
                 if (buckets.get(0).isFull() && buckets.get(1).isFull() && buckets.get(2).isFull()) {
-                    assets.sounds.newLevel.play();
                     gameState = Enums.GameState.GOTO_NEXT_LEVEL;
                 }
             } else if (ball.ballState == Enums.BallState.MISSED) {
-                assets.sounds.missed.play();
+                assets.sounds.playSound(assets.sounds.missed);
                 balls.removeValue(ball, false);
                 combo = 0;
                 currentScore = Math.max(0, currentScore - 25);
@@ -224,28 +237,52 @@ public class BallSortScreen extends ScreenAdapter {
     private void playComboSound() {
         switch (combo) {
             case 1:
-                assets.sounds.caught1.play();
+                assets.sounds.playSound(assets.sounds.caught1);
                 break;
             case 2:
-                assets.sounds.caught2.play();
+                assets.sounds.playSound(assets.sounds.caught2);
                 break;
             case 3:
-                assets.sounds.caught3.play();
+                assets.sounds.playSound(assets.sounds.caught3);
                 break;
             case 4:
-                assets.sounds.caught4.play();
+                assets.sounds.playSound(assets.sounds.caught4);
                 break;
             case 5:
-                assets.sounds.caught5.play();
+                assets.sounds.playSound(assets.sounds.caught5);
                 break;
             case 6:
-                assets.sounds.caught6.play();
+                assets.sounds.playSound(assets.sounds.caught6);
                 break;
             case 7:
-                assets.sounds.caught7.play();
+                assets.sounds.playSound(assets.sounds.caught7);
+                break;
+            case 8:
+                assets.sounds.playSound(assets.sounds.caught8);
+                break;
+            case 9:
+                assets.sounds.playSound(assets.sounds.caught9);
+                break;
+            case 10:
+                assets.sounds.playSound(assets.sounds.caught10);
+                break;
+            case 11:
+                assets.sounds.playSound(assets.sounds.caught11);
+                break;
+            case 12:
+                assets.sounds.playSound(assets.sounds.caught12);
+                break;
+            case 13:
+                assets.sounds.playSound(assets.sounds.caught13);
+                break;
+            case 14:
+                assets.sounds.playSound(assets.sounds.caught14);
+                break;
+            case 15:
+                assets.sounds.playSound(assets.sounds.caught15);
                 break;
             default:
-                assets.sounds.caught8.play();
+                assets.sounds.playSound(assets.sounds.caught16);
                 break;
         }
     }
@@ -345,9 +382,25 @@ public class BallSortScreen extends ScreenAdapter {
         );
     }
 
-    private void gameOver() {
-        balls.end();
-        assets.sounds.gameOver.play();
-        this.show();
+    private void saveGame() {
+        if (currentScore > highScore) {
+            preferences.putLong(Constants.PREF_HIGH_SCORE, currentScore);
+            highScore = currentScore;
+        }
+        if (level > highLevel) {
+            preferences.putInteger(Constants.PREF_HIGH_LEVEL, level);
+            highLevel = level;
+        }
+        preferences.flush();
     }
+
+    public void goToHighLevel() {
+        //only go to the highlevel if it's higher than the current level
+        if (highLevel > level) {
+            //increment level to one less than highlevel since GOTO_NEXT_LEVEL will add one
+            level = highLevel - 1;
+            gameState = Enums.GameState.GOTO_NEXT_LEVEL;
+        }
+    }
+
 }
