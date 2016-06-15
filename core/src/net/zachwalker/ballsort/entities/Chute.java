@@ -7,12 +7,13 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 public class Chute {
 
+    //NOTE: properties are not private because they need to be accessed to check for touch event
     float positionX;
     float positionY;
     float width;
     float height;
-    ShapeType shapeType;
-    Color color;
+    private ShapeType shapeType;
+    private Color color;
 
     public Chute(float x, float y, float width, float height, ShapeType fillType, Color color) {
         positionX = x;
@@ -30,6 +31,10 @@ public class Chute {
         renderer.setColor(color);
         renderer.rect(positionX, positionY, width, height);
         renderer.end();
+    }
+
+    public float getWidth() {
+        return width;
     }
 
 }

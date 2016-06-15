@@ -19,14 +19,16 @@ public class TouchTargets extends InputAdapter{
     Array<Valve> valves;
     Assets assets;
 
-    //make sure to initialize touchtargets AFTER valves have been created
-    //note that we need to pass the viewport to the valve since it will be receiving touches
-    //and will need to unproject the touch input using the viewport
+    //note that touch targets must be initalized AFTER valves AND assets
+    //also note that we need to pass the viewport to the touchtargets class since it will be
+    //receiving touches and will need to unproject the touch input using the viewport
+    //also need to pass in assets since it will be playing sounds when valves are toggled
     public TouchTargets(Viewport viewport, Array<Valve> valves, Assets assets) {
         this.viewport = viewport;
         this.valves = valves;
         this.assets = assets;
         touchTargets = new Array<Chute>();
+        //for every valve, add a corresponding touch target
         for (Valve valve : valves) {
             touchTargets.add(new Chute(
                     valve.positionX - (Constants.VALVE_WIDTH),
@@ -39,10 +41,11 @@ public class TouchTargets extends InputAdapter{
         }
     }
 
-    //TODO clean up this method
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        //get the coordinates of the touchDown event in OUR world coords (not screen coords)
         Vector2 viewportPosition = viewport.unproject(new Vector2(screenX, screenY));
+        //check each touchTarget to see if any were hit (within the radius)
         for (int i = 0; i < touchTargets.size; i++) {
             Vector2 touchTargetCenter = new Vector2(
                     touchTargets.get(i).positionX + (touchTargets.get(i).width / 2.0f),
@@ -50,6 +53,7 @@ public class TouchTargets extends InputAdapter{
             );
             float radius = Math.min(touchTargets.get(i).width, touchTargets.get(i).height) / 2.0f;
             if (viewportPosition.dst(touchTargetCenter) <= radius) {
+                //since our touchTargets and valves arrays are aligned, we can use the same iterator
                 valves.get(i).switchValveState();
                 assets.sounds.valve.play();
             }

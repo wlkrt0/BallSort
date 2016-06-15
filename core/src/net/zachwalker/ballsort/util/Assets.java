@@ -19,6 +19,9 @@ public class Assets implements Disposable, AssetErrorListener {
         manager.load(Constants.SOUND_NEWBALL, Sound.class);
         manager.load(Constants.SOUND_VALVE, Sound.class);
         manager.load(Constants.SOUND_MISSED, Sound.class);
+        manager.load(Constants.SOUND_GAME_OVER, Sound.class);
+        manager.load(Constants.SOUND_FULL, Sound.class);
+        manager.load(Constants.SOUND_NEW_LEVEL, Sound.class);
         manager.load(Constants.SOUND_CAUGHT1, Sound.class);
         manager.load(Constants.SOUND_CAUGHT2, Sound.class);
         manager.load(Constants.SOUND_CAUGHT3, Sound.class);
@@ -48,6 +51,9 @@ public class Assets implements Disposable, AssetErrorListener {
         public Sound newBall;
         public Sound valve;
         public Sound missed;
+        public Sound gameOver;
+        public Sound full;
+        public Sound newLevel;
         public Sound caught1;
         public Sound caught2;
         public Sound caught3;
@@ -61,6 +67,9 @@ public class Assets implements Disposable, AssetErrorListener {
             newBall = manager.get(Constants.SOUND_NEWBALL, Sound.class);
             valve = manager.get(Constants.SOUND_VALVE, Sound.class);
             missed = manager.get(Constants.SOUND_MISSED, Sound.class);
+            gameOver = manager.get(Constants.SOUND_GAME_OVER, Sound.class);
+            full = manager.get(Constants.SOUND_FULL, Sound.class);
+            newLevel = manager.get(Constants.SOUND_NEW_LEVEL, Sound.class);
             caught1 = manager.get(Constants.SOUND_CAUGHT1, Sound.class);
             caught2 = manager.get(Constants.SOUND_CAUGHT2, Sound.class);
             caught3 = manager.get(Constants.SOUND_CAUGHT3, Sound.class);

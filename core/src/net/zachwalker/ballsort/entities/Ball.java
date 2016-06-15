@@ -13,7 +13,7 @@ public class Ball {
 
     private Enums.BallType ballType;
     public Enums.BallState ballState;
-    private Enums.BallFellThru fellThru;
+    public Enums.BallFellThru fellThru;
     private Color ballColor;
     private Vector2 position;
     private Vector2 velocity;

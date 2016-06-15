@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.DelayedRemovalArray;
 import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import net.zachwalker.ballsort.entities.Bucket;
 import net.zachwalker.ballsort.entities.Chute;
 import net.zachwalker.ballsort.entities.TouchTargets;
 import net.zachwalker.ballsort.entities.Valve;
@@ -31,13 +32,17 @@ public class BallSortScreen extends ScreenAdapter {
     private SpriteBatch batch;
     private DelayedRemovalArray<Ball> balls;
     private Array<Chute> chutes;
+    private Array<Bucket> buckets;
     private Array<Valve> valves;
     private TouchTargets touchTargets;
     private Score score;
+    private Enums.GameState gameState;
     private long currentScore;
     private long lastBallSpawnedTime;
     private float nextBallSpawnInterval;
     private int combo;
+    private int level;
+    private long levelChangeStartedTime;
 
     public BallSortScreen() {
         //the superclass doesn't do anything in its constructor either
@@ -47,6 +52,7 @@ public class BallSortScreen extends ScreenAdapter {
 
     @Override
     public void show() {
+        level = 19;
         assets = new Assets();
         viewport = new ExtendViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
         renderer = new ShapeRenderer();
@@ -54,6 +60,10 @@ public class BallSortScreen extends ScreenAdapter {
         balls = new DelayedRemovalArray<Ball>();
         chutes = new Array<Chute>();
         initializeChutes();
+        buckets = new Array<Bucket>();
+        //note that level must be set before initializing buckets since they use it to calc goal
+        //note that this method initalizes static (empty outline) buckets in the Chutes array as well
+        initializeBuckets();
         valves = new Array<Valve>();
         initializeValves();
         //note that touch targets must be initalized AFTER valves AND assets
@@ -63,38 +73,48 @@ public class BallSortScreen extends ScreenAdapter {
         touchTargets = new TouchTargets(viewport, valves, assets);
         Gdx.input.setInputProcessor(touchTargets);
         score = new Score();
+        gameState = Enums.GameState.PLAYING_NORMAL;
         lastBallSpawnedTime = TimeUtils.nanoTime();
-        nextBallSpawnInterval = Constants.BALL_SPAWN_INTERVAL_MIN;
     }
 
     @Override
     public void render(float delta) {
-        //update everything's position, visibility, scores, etc. all game logic.
-        float elapsedSeconds = MathUtils.nanoToSec * (TimeUtils.nanoTime() - lastBallSpawnedTime);
-        if (elapsedSeconds >= nextBallSpawnInterval) {
-            balls.add(new Ball());
-            assets.sounds.newBall.play();
-            lastBallSpawnedTime = TimeUtils.nanoTime();
-            nextBallSpawnInterval = MathUtils.random(Constants.BALL_SPAWN_INTERVAL_MIN, Constants.BALL_SPAWN_INTERVAL_MAX);
-        }
-
-        balls.begin();
-        for (Ball ball : balls) {
-            //note that we need to pass the valve to each ball so that the balls can check whether
-            //they've arrived at a valve which is open
-            ball.update(delta, valves);
-            if (ball.ballState == Enums.BallState.CAUGHT) {
-                combo += 1;
-                currentScore += combo;
-                playComboSound();
-                balls.removeValue(ball, false);
-            } else if (ball.ballState == Enums.BallState.MISSED) {
-                assets.sounds.missed.play();
-                balls.removeValue(ball, false);
+        //all game logic except touch inputs. update everything's position, visibility, scores, etc.
+        switch(gameState) {
+            case PLAYING_NORMAL:
+                addNewBall();
+                removeBalls(delta);
+                break;
+            case GOTO_NEXT_LEVEL:
+                //reset balls, buckets, and combo. increment the level and start the timer.
                 combo = 0;
-            }
+                level += 1;
+                balls.clear();
+                for (Bucket bucket : buckets) {
+                    bucket.reset(level * Constants.BUCKET_GOAL_PER_LEVEL);
+                }
+                levelChangeStartedTime = TimeUtils.nanoTime();
+                gameState = Enums.GameState.STARTING_NEXT_LEVEL;
+                break;
+            case STARTING_NEXT_LEVEL:
+                //just wait and increment the timer
+                float elapsedSeconds = MathUtils.nanoToSec * (TimeUtils.nanoTime() - levelChangeStartedTime);
+                if (elapsedSeconds >= Constants.LEVEL_START_DELAY) gameState = Enums.GameState.PLAYING_NORMAL;
+                break;
+            case GAME_OVER:
+                //similar to GOTO_NEXT_LEVEL
+                assets.sounds.gameOver.play();
+                currentScore = 0;
+                combo = 0;
+                level = 1;
+                balls.clear();
+                for (Bucket bucket : buckets) {
+                    bucket.reset(level * Constants.BUCKET_GOAL_PER_LEVEL);
+                }
+                levelChangeStartedTime = TimeUtils.nanoTime();
+                gameState = Enums.GameState.STARTING_NEXT_LEVEL;
+                break;
         }
-        balls.end();
 
         //clear the screen in preparation for rendering the updated positions / visibility of objects
         Gdx.gl.glClearColor(
@@ -116,13 +136,17 @@ public class BallSortScreen extends ScreenAdapter {
             chute.render(renderer);
         }
 
+        for (Bucket bucket : buckets) {
+            bucket.render(renderer);
+        }
+
         for (Valve valve : valves) {
             valve.render(renderer);
         }
 
         touchTargets.render(renderer);
 
-        score.render(batch, currentScore, combo);
+        score.render(batch, currentScore, level, combo);
     }
 
     @Override
@@ -134,6 +158,67 @@ public class BallSortScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         batch.dispose();
+    }
+
+    private void addNewBall() {
+        float elapsedSeconds = MathUtils.nanoToSec * (TimeUtils.nanoTime() - lastBallSpawnedTime);
+        if (elapsedSeconds >= nextBallSpawnInterval) {
+            balls.add(new Ball());
+            assets.sounds.newBall.play();
+            lastBallSpawnedTime = TimeUtils.nanoTime();
+            double x = (double) level;
+            double nextMinBallSpawnInterval = Math.max(-0.01d * Math.pow(x, 3.0d) + 0.291d * Math.pow(x, 2.0d) - 2.796d * x + 10.516d, Constants.BALL_SPAWN_INTERVAL_MIN);
+            double nextMaxBallSpawnInterval = Math.max(8.849d * Math.pow(Math.E, (x * -0.094d)), Constants.BALL_SPAWN_INTERVAL_MIN);
+            nextBallSpawnInterval = MathUtils.random((float) nextMinBallSpawnInterval, (float) nextMaxBallSpawnInterval);
+        }
+    }
+
+    private void removeBalls(float delta) {
+        balls.begin();
+        for (Ball ball : balls) {
+            //note that we need to pass the valve to each ball so that the balls can check whether
+            //they've arrived at a valve which is open
+            ball.update(delta, valves);
+            if (ball.ballState == Enums.BallState.CAUGHT) {
+                combo += 1;
+                currentScore += combo;
+                playComboSound();
+                balls.removeValue(ball, false);
+                switch (ball.fellThru) {
+                    case LEFT_VALVE:
+                        if (buckets.get(0).caughtBall()) assets.sounds.full.play();
+                        break;
+                    case RIGHT_VALVE:
+                        if (buckets.get(1).caughtBall()) assets.sounds.full.play();
+                        break;
+                    case END:
+                        if (buckets.get(2).caughtBall()) assets.sounds.full.play();
+                        break;
+                }
+                //if all three buckets are now full, start a new level
+                if (buckets.get(0).isFull() && buckets.get(1).isFull() && buckets.get(2).isFull()) {
+                    assets.sounds.newLevel.play();
+                    gameState = Enums.GameState.GOTO_NEXT_LEVEL;
+                }
+            } else if (ball.ballState == Enums.BallState.MISSED) {
+                assets.sounds.missed.play();
+                balls.removeValue(ball, false);
+                combo = 0;
+                currentScore = Math.max(0, currentScore - 25);
+                switch (ball.fellThru) {
+                    case LEFT_VALVE:
+                        if (buckets.get(0).missedBall()) gameState = Enums.GameState.GAME_OVER;
+                        break;
+                    case RIGHT_VALVE:
+                        if (buckets.get(1).missedBall()) gameState = Enums.GameState.GAME_OVER;
+                        break;
+                    case END:
+                        if (buckets.get(2).missedBall()) gameState = Enums.GameState.GAME_OVER;
+                        break;
+                }
+            }
+        }
+        balls.end();
     }
 
     private void playComboSound() {
@@ -170,6 +255,55 @@ public class BallSortScreen extends ScreenAdapter {
         valves.add(new Valve(Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH));
         //draw the right valve
         valves.add(new Valve(Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) + Constants.VALVE_WIDTH));
+    }
+
+    private void initializeBuckets() {
+        //NOTE: this method initalizes static (empty outline) buckets in the Chutes array as well
+        //draw the left DYNAMIC bucket (progress bar)
+        float leftBucketX = Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.BALL_SIZE -
+                (Constants.BUCKET_WIDTH / 2.0f);
+
+        buckets.add(new Bucket(leftBucketX, Constants.BUCKET_LEFT_COLOR, level * Constants.BUCKET_GOAL_PER_LEVEL));
+
+        //draw the middle DYNAMIC bucket (progress bar)
+        float middleBucketX = Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) +
+                Constants.VALVE_WIDTH + Constants.BALL_SIZE - (Constants.BUCKET_WIDTH / 2.0f);
+
+        buckets.add(new Bucket(middleBucketX, Constants.BUCKET_MIDDLE_COLOR, level * Constants.BUCKET_GOAL_PER_LEVEL));
+
+        //draw the right DYNAMIC bucket (progress bar)
+        float rightBucketX = Constants.CHUTE_MARGIN + (3.0f * Constants.RAMP_WIDTH) +
+                (2.0f * Constants.VALVE_WIDTH) + Constants.BALL_SIZE - (Constants.BUCKET_WIDTH / 2.0f);
+
+        buckets.add(new Bucket(rightBucketX, Constants.BUCKET_RIGHT_COLOR, level * Constants.BUCKET_GOAL_PER_LEVEL));
+
+        //draw the left STATIC (empty outline) bucket
+        chutes.add(new Chute(
+                leftBucketX,
+                0.0f,
+                Constants.BUCKET_WIDTH,
+                Constants.BUCKET_HEIGHT,
+                ShapeType.Line,
+                Constants.BUCKET_LEFT_COLOR)
+        );
+        //draw the middle STATIC (empty outline) bucket
+        chutes.add(new Chute(
+                middleBucketX,
+                0.0f,
+                Constants.BUCKET_WIDTH,
+                Constants.BUCKET_HEIGHT,
+                ShapeType.Line,
+                Constants.BUCKET_MIDDLE_COLOR)
+        );
+        //draw the right STATIC (empty outline) bucket
+        chutes.add(new Chute(
+                rightBucketX,
+                0.0f,
+                Constants.BUCKET_WIDTH,
+                Constants.BUCKET_HEIGHT,
+                ShapeType.Line,
+                Constants.BUCKET_RIGHT_COLOR)
+        );
     }
 
     private void initializeChutes() {
@@ -209,32 +343,11 @@ public class BallSortScreen extends ScreenAdapter {
                 ShapeType.Line,
                 Color.GRAY)
         );
-        //draw the left bucket
-        chutes.add(new Chute(
-                Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.BALL_SIZE - (Constants.BUCKET_WIDTH / 2.0f),
-                0.0f,
-                Constants.BUCKET_WIDTH,
-                Constants.BUCKET_HEIGHT,
-                ShapeType.Filled,
-                Constants.BUCKET_LEFT_COLOR)
-        );
-        //draw the middle bucket
-        chutes.add(new Chute(
-                Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) + Constants.VALVE_WIDTH + Constants.BALL_SIZE - (Constants.BUCKET_WIDTH / 2.0f),
-                0.0f,
-                Constants.BUCKET_WIDTH,
-                Constants.BUCKET_HEIGHT,
-                ShapeType.Filled,
-                Constants.BUCKET_MIDDLE_COLOR)
-        );
-        //draw the right bucket
-        chutes.add(new Chute(
-                Constants.CHUTE_MARGIN + (3.0f * Constants.RAMP_WIDTH) + (2.0f * Constants.VALVE_WIDTH) + Constants.BALL_SIZE - (Constants.BUCKET_WIDTH / 2.0f),
-                0.0f,
-                Constants.BUCKET_WIDTH,
-                Constants.BUCKET_HEIGHT,
-                ShapeType.Filled,
-                Constants.BUCKET_RIGHT_COLOR)
-        );
+    }
+
+    private void gameOver() {
+        balls.end();
+        assets.sounds.gameOver.play();
+        this.show();
     }
 }
