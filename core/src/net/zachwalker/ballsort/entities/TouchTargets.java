@@ -71,6 +71,7 @@ public class TouchTargets extends InputAdapter{
 
         //check the gotoLevel target to see if it was hit (touch point was within its radius)
         if (targetWasHit(viewportPosition, gotoLevelTarget)) {
+            assets.sounds.playSound(assets.sounds.button);
             ballSortScreen.goToHighLevel();
         }
 
@@ -79,8 +80,9 @@ public class TouchTargets extends InputAdapter{
             if (toggleSoundTarget.color.equals(Constants.TOUCHTARGET_COLOR)) {
                 toggleSoundTarget.color = Color.RED;
             } else {
-                toggleSoundTarget.color =Constants.TOUCHTARGET_COLOR;
+                toggleSoundTarget.color = Constants.TOUCHTARGET_COLOR;
             }
+            assets.sounds.playSound(assets.sounds.button);
             assets.sounds.toggleMute();
         }
 

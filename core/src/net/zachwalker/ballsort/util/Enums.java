@@ -18,7 +18,8 @@ public class Enums {
     public enum BallType {
         RED,
         YELLOW,
-        BLUE
+        BLUE,
+        POWERUP
     }
 
     public enum BallState {

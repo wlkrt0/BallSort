@@ -24,6 +24,8 @@ public class Score {
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
 
+        if (currentScore > highScore) highScore = currentScore;
+
         //always show the high score and current score
         String scoreText = Constants.SCORE_LABEL + currentScore + "\n"
                 + Constants.HIGH_SCORE_LABEL + highScore;

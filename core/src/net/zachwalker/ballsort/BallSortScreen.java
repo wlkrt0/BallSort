@@ -42,6 +42,7 @@ public class BallSortScreen extends ScreenAdapter {
     private long highScore;
     private int level;
     private int highLevel;
+    private long lastPowerupStartedTime;
     private long lastBallSpawnedTime;
     private float nextBallSpawnInterval;
     private int combo;
@@ -95,8 +96,6 @@ public class BallSortScreen extends ScreenAdapter {
                 break;
             case GOTO_NEXT_LEVEL:
                 assets.sounds.playSound(assets.sounds.newLevel);
-                //save the current highScore and highLevel
-                saveGame();
                 //reset balls, buckets, and combo. increment the level and start the next level timer.
                 combo = 0;
                 level += 1;
@@ -106,6 +105,8 @@ public class BallSortScreen extends ScreenAdapter {
                 }
                 levelChangeStartedTime = TimeUtils.nanoTime();
                 gameState = Enums.GameState.STARTING_NEXT_LEVEL;
+                //save the current highScore and highLevel
+                saveGame();
                 break;
             case STARTING_NEXT_LEVEL:
                 //just wait and increment the timer
@@ -170,13 +171,15 @@ public class BallSortScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
+        renderer.dispose();
         batch.dispose();
     }
 
     private void addNewBall() {
         float elapsedSeconds = MathUtils.nanoToSec * (TimeUtils.nanoTime() - lastBallSpawnedTime);
         if (elapsedSeconds >= nextBallSpawnInterval) {
-            balls.add(new Ball());
+            //note that we are passing this class to the ball constructor so that balls can get and set powerup status
+            balls.add(new Ball(this));
             assets.sounds.playSound(assets.sounds.newBall);
             lastBallSpawnedTime = TimeUtils.nanoTime();
             double x = (double) level;
@@ -235,55 +238,10 @@ public class BallSortScreen extends ScreenAdapter {
     }
 
     private void playComboSound() {
-        switch (combo) {
-            case 1:
-                assets.sounds.playSound(assets.sounds.caught1);
-                break;
-            case 2:
-                assets.sounds.playSound(assets.sounds.caught2);
-                break;
-            case 3:
-                assets.sounds.playSound(assets.sounds.caught3);
-                break;
-            case 4:
-                assets.sounds.playSound(assets.sounds.caught4);
-                break;
-            case 5:
-                assets.sounds.playSound(assets.sounds.caught5);
-                break;
-            case 6:
-                assets.sounds.playSound(assets.sounds.caught6);
-                break;
-            case 7:
-                assets.sounds.playSound(assets.sounds.caught7);
-                break;
-            case 8:
-                assets.sounds.playSound(assets.sounds.caught8);
-                break;
-            case 9:
-                assets.sounds.playSound(assets.sounds.caught9);
-                break;
-            case 10:
-                assets.sounds.playSound(assets.sounds.caught10);
-                break;
-            case 11:
-                assets.sounds.playSound(assets.sounds.caught11);
-                break;
-            case 12:
-                assets.sounds.playSound(assets.sounds.caught12);
-                break;
-            case 13:
-                assets.sounds.playSound(assets.sounds.caught13);
-                break;
-            case 14:
-                assets.sounds.playSound(assets.sounds.caught14);
-                break;
-            case 15:
-                assets.sounds.playSound(assets.sounds.caught15);
-                break;
-            default:
-                assets.sounds.playSound(assets.sounds.caught16);
-                break;
+        if (combo >= Constants.SOUND_CAUGHT_COUNT) {
+            assets.sounds.playSound(assets.sounds.caught.get(Constants.SOUND_CAUGHT_COUNT - 1));
+        } else {
+            assets.sounds.playSound(assets.sounds.caught.get(combo - 1));
         }
     }
 
@@ -401,6 +359,15 @@ public class BallSortScreen extends ScreenAdapter {
             level = highLevel - 1;
             gameState = Enums.GameState.GOTO_NEXT_LEVEL;
         }
+    }
+
+    public void startPowerup() {
+        assets.sounds.playSound(assets.sounds.powerup);
+        lastPowerupStartedTime = TimeUtils.nanoTime();
+    }
+
+    public boolean isPowerupActive() {
+        return ((TimeUtils.nanoTime() - lastPowerupStartedTime) * MathUtils.nanoToSec) <= Constants.POWERUP_DURATION;
     }
 
 }

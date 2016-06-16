@@ -1,3 +1,4 @@
-add overlay for new level
-add overlay for game over
-add autosort powerup
+adjust level difficulty - eliminate 3 and 4, increase 2's difficulty
+add textures
+low combo sounds (1-8) need to sound better on mobile devices
+make fonts look better

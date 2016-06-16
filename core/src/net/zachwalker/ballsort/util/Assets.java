@@ -5,8 +5,8 @@ import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetErrorListener;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
-
 
 public class Assets implements Disposable, AssetErrorListener {
 
@@ -22,22 +22,13 @@ public class Assets implements Disposable, AssetErrorListener {
         manager.load(Constants.SOUND_GAME_OVER, Sound.class);
         manager.load(Constants.SOUND_FULL, Sound.class);
         manager.load(Constants.SOUND_NEW_LEVEL, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT1, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT2, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT3, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT4, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT5, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT6, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT7, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT8, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT9, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT10, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT11, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT12, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT13, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT14, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT15, Sound.class);
-        manager.load(Constants.SOUND_CAUGHT16, Sound.class);
+        manager.load(Constants.SOUND_POWERUP, Sound.class);
+        manager.load(Constants.SOUND_BUTTON, Sound.class);
+        for (int i = 0; i < Constants.SOUND_CAUGHT_COUNT; i++) {
+            manager.load(
+                    Constants.SOUND_CAUGHT_PREFIX + Integer.toString(i + 1) + Constants.SOUND_CAUGHT_SUFFIX,
+                    Sound.class);
+        }
         //set loading to be synchronous
         manager.finishLoading();
 
@@ -63,22 +54,9 @@ public class Assets implements Disposable, AssetErrorListener {
         public Sound gameOver;
         public Sound full;
         public Sound newLevel;
-        public Sound caught1;
-        public Sound caught2;
-        public Sound caught3;
-        public Sound caught4;
-        public Sound caught5;
-        public Sound caught6;
-        public Sound caught7;
-        public Sound caught8;
-        public Sound caught9;
-        public Sound caught10;
-        public Sound caught11;
-        public Sound caught12;
-        public Sound caught13;
-        public Sound caught14;
-        public Sound caught15;
-        public Sound caught16;
+        public Sound powerup;
+        public Sound button;
+        public Array<Sound> caught;
 
         public Sounds(AssetManager manager) {
             newBall = manager.get(Constants.SOUND_NEWBALL, Sound.class);
@@ -87,22 +65,15 @@ public class Assets implements Disposable, AssetErrorListener {
             gameOver = manager.get(Constants.SOUND_GAME_OVER, Sound.class);
             full = manager.get(Constants.SOUND_FULL, Sound.class);
             newLevel = manager.get(Constants.SOUND_NEW_LEVEL, Sound.class);
-            caught1 = manager.get(Constants.SOUND_CAUGHT1, Sound.class);
-            caught2 = manager.get(Constants.SOUND_CAUGHT2, Sound.class);
-            caught3 = manager.get(Constants.SOUND_CAUGHT3, Sound.class);
-            caught4 = manager.get(Constants.SOUND_CAUGHT4, Sound.class);
-            caught5 = manager.get(Constants.SOUND_CAUGHT5, Sound.class);
-            caught6 = manager.get(Constants.SOUND_CAUGHT6, Sound.class);
-            caught7 = manager.get(Constants.SOUND_CAUGHT7, Sound.class);
-            caught8 = manager.get(Constants.SOUND_CAUGHT8, Sound.class);
-            caught9 = manager.get(Constants.SOUND_CAUGHT9, Sound.class);
-            caught10 = manager.get(Constants.SOUND_CAUGHT10, Sound.class);
-            caught11 = manager.get(Constants.SOUND_CAUGHT11, Sound.class);
-            caught12 = manager.get(Constants.SOUND_CAUGHT12, Sound.class);
-            caught13 = manager.get(Constants.SOUND_CAUGHT13, Sound.class);
-            caught14 = manager.get(Constants.SOUND_CAUGHT14, Sound.class);
-            caught15 = manager.get(Constants.SOUND_CAUGHT15, Sound.class);
-            caught16 = manager.get(Constants.SOUND_CAUGHT16, Sound.class);
+            powerup = manager.get(Constants.SOUND_POWERUP, Sound.class);
+            button = manager.get(Constants.SOUND_BUTTON, Sound.class);
+
+            caught = new Array<Sound>();
+            for (int i = 0; i < Constants.SOUND_CAUGHT_COUNT; i++) {
+                caught.insert(i, manager.get(
+                        Constants.SOUND_CAUGHT_PREFIX + Integer.toString(i + 1) + Constants.SOUND_CAUGHT_SUFFIX,
+                        Sound.class));
+            }
         }
 
         public void playSound(Sound sound)

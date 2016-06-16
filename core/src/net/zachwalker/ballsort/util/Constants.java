@@ -5,18 +5,23 @@ import com.badlogic.gdx.graphics.Color;
 
 public final class Constants {
     public static final String LOG_TAG = "BallSort";
+
     public static final String PREF_HIGH_SCORE = "highscore";
     public static final String PREF_HIGH_LEVEL = "highlevel";
 
     public static final int WORLD_WIDTH = 222;
     public static final int WORLD_HEIGHT = 125;
     public static final Color BACKGROUND_COLOR = Color.BLACK;
+
     public static final float GRAVITY = 7.0f;
+
     public static final float LEVEL_START_DELAY = 10.0f;
 
+    public static final float POWERUP_DURATION = 13.5f;
+
     public static final float BALL_SIZE = 5.0f;
-    public static final double BALL_SPAWN_INTERVAL_MIN = 0.5f;
     public static final float BALL_SPEED = 20.0f;
+    public static final double BALL_SPAWN_INTERVAL_MIN = 0.5f;
 
     public static final float CHUTE_WIDTH = BALL_SIZE * 2.0f;
     public static final float CHUTE_HEIGHT = 100.0f;
@@ -39,7 +44,7 @@ public final class Constants {
     public static final float SCORE_FONT_SCALE = 200.0f;
     public static final String SCORE_LABEL = "";
     public static final String HIGH_SCORE_LABEL = "";
-    public static final String LEVEL_LABEL = "LVL ";
+    public static final String LEVEL_LABEL = "LEVEL ";
     public static final String COMBO_LABEL = "x";
 
     public static final Color TOUCHTARGET_COLOR = Color.GREEN;
@@ -50,20 +55,9 @@ public final class Constants {
     public static final String SOUND_GAME_OVER = "gameover.wav";
     public static final String SOUND_FULL = "full.wav";
     public static final String SOUND_NEW_LEVEL = "newlevel.wav";
-    public static final String SOUND_CAUGHT1 = "caught1.wav";
-    public static final String SOUND_CAUGHT2 = "caught2.wav";
-    public static final String SOUND_CAUGHT3 = "caught3.wav";
-    public static final String SOUND_CAUGHT4 = "caught4.wav";
-    public static final String SOUND_CAUGHT5 = "caught5.wav";
-    public static final String SOUND_CAUGHT6 = "caught6.wav";
-    public static final String SOUND_CAUGHT7 = "caught7.wav";
-    public static final String SOUND_CAUGHT8 = "caught8.wav";
-    public static final String SOUND_CAUGHT9 = "caught9.wav";
-    public static final String SOUND_CAUGHT10 = "caught10.wav";
-    public static final String SOUND_CAUGHT11 = "caught11.wav";
-    public static final String SOUND_CAUGHT12 = "caught12.wav";
-    public static final String SOUND_CAUGHT13 = "caught13.wav";
-    public static final String SOUND_CAUGHT14 = "caught14.wav";
-    public static final String SOUND_CAUGHT15 = "caught15.wav";
-    public static final String SOUND_CAUGHT16 = "caught16.wav";
+    public static final String SOUND_POWERUP = "powerup.wav";
+    public static final String SOUND_BUTTON = "button.wav";
+    public static final String SOUND_CAUGHT_PREFIX = "caught";
+    public static final String SOUND_CAUGHT_SUFFIX = ".wav";
+    public static final int SOUND_CAUGHT_COUNT = 16;
 }

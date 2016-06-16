@@ -1,6 +1,5 @@
 package net.zachwalker.ballsort.entities;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import net.zachwalker.ballsort.util.Constants;
 import net.zachwalker.ballsort.util.Enums;
