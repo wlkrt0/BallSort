@@ -24,39 +24,13 @@ public class Ball {
     //note that we are passing the BallSortScreen class to the ball constructor so that balls can get and set powerup status
     public Ball(BallSortScreen ballSortScreen) {
         this.ballSortScreen = ballSortScreen;
-        //each new ball gets a random type. regular balls are equal probablity. powerup is rare.
-        float randomNumber = MathUtils.random();
-        if (randomNumber < 0.04f) {
-            ballType = Enums.BallType.POWERUP;
-        } else if (randomNumber >= 0.04f && randomNumber < 0.36f) {
-            ballType = Enums.BallType.RED;
-        } else if (randomNumber >= 0.36f && randomNumber < 0.68f) {
-            ballType = Enums.BallType.YELLOW;
-        } else {
-            ballType = Enums.BallType.BLUE;
-        }
-
-        //set the ball's color based on its type
-        switch(ballType) {
-            case RED:
-                ballColor = Color.RED;
-                break;
-            case YELLOW:
-                ballColor = Color.YELLOW;
-                break;
-            case BLUE:
-                ballColor = Color.BLUE;
-                break;
-            case POWERUP:
-                ballColor = Color.WHITE;
-                break;
-        }
-
+        //must set balltype before color (since color is based on type)
+        setBallType();
+        setBallColor();
         //each new ball gets the same starting position with zero velocity and ballState = CHUTE
         position = new Vector2(Constants.CHUTE_MARGIN + Constants.BALL_SIZE, Constants.BALL_SIZE);
         velocity = new Vector2();
         ballState = Enums.BallState.CHUTE;
-        fellThru = Enums.BallFellThru.NONE;
     }
 
     public void update(float delta, Array<Valve> valves) {
@@ -83,6 +57,38 @@ public class Ball {
         renderer.end();
     }
 
+    /* each new ball gets a random type. regular balls are equal probability. powerup is rare. */
+    private void setBallType() {
+        float randomNumber = MathUtils.random();
+        if (randomNumber < 0.04f) {
+            ballType = Enums.BallType.POWERUP;
+        } else if (randomNumber >= 0.04f && randomNumber < 0.36f) {
+            ballType = Enums.BallType.RED;
+        } else if (randomNumber >= 0.36f && randomNumber < 0.68f) {
+            ballType = Enums.BallType.YELLOW;
+        } else {
+            ballType = Enums.BallType.BLUE;
+        }
+    }
+
+    /* sets the ball's color based on its type */
+    private void setBallColor() {
+        switch(ballType) {
+            case RED:
+                ballColor = Color.RED;
+                break;
+            case YELLOW:
+                ballColor = Color.YELLOW;
+                break;
+            case BLUE:
+                ballColor = Color.BLUE;
+                break;
+            case POWERUP:
+                ballColor = Color.WHITE;
+                break;
+        }
+    }
+
     private void moveInChute(float delta) {
         velocity.x = 0.0f;
         velocity.y = Constants.BALL_SPEED;
@@ -97,6 +103,8 @@ public class Ball {
         velocity.x = Constants.BALL_SPEED;
         velocity.y = 0.0f;
         position.mulAdd(velocity, delta);
+        //automate the valves if a powerup is active
+        if (ballSortScreen.isPowerupActive()) automateValves(valves);
         //start falling if the ball is on top of an open valve or at the end of the ramp
         if (fellThroughGap(valves)) {
             ballState = Enums.BallState.FALLING;
@@ -118,49 +126,16 @@ public class Ball {
         }
     }
 
-    //TODO clean up this method
     private boolean fellThroughGap(Array<Valve> valves) {
-        //if it fell through the left valve or a powerup says it should
-        if (position.x > (Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.BALL_SIZE) &&
-                position.x < (Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.VALVE_WIDTH)) {
-            if (ballSortScreen.isPowerupActive()) {
-                if (ballColor.equals(Constants.BUCKET_LEFT_COLOR)) {
-                    if (valves.get(0).valveState == Enums.ValveState.CLOSED) valves.get(0).switchValveState();
-                    fellThru = Enums.BallFellThru.LEFT_VALVE;
-                    return true;
-                } else {
-                    if (valves.get(0).valveState == Enums.ValveState.OPEN) valves.get(0).switchValveState();
-                    return false;
-                }
-            } else {
-                if (valves.get(0).valveState == Enums.ValveState.OPEN) {
-                    fellThru = Enums.BallFellThru.LEFT_VALVE;
-                    return true;
-                } else {
-                    return false;
-                }
-            }
+        //if it fell through the left valve
+        if (overLeftValve() && valves.get(0).valveState == Enums.ValveState.OPEN) {
+            fellThru = Enums.BallFellThru.LEFT_VALVE;
+            return true;
         }
-        //if it fell through the right valve or a powerup says it should
-        else if (position.x > (Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) + Constants.VALVE_WIDTH + Constants.BALL_SIZE) &&
-                position.x < (Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) + (2.0f * Constants.VALVE_WIDTH))) {
-            if (ballSortScreen.isPowerupActive()) {
-                if (ballColor.equals(Constants.BUCKET_MIDDLE_COLOR)) {
-                    if (valves.get(1).valveState == Enums.ValveState.CLOSED) valves.get(1).switchValveState();
-                    fellThru = Enums.BallFellThru.RIGHT_VALVE;
-                    return true;
-                } else {
-                    if (valves.get(1).valveState == Enums.ValveState.OPEN) valves.get(1).switchValveState();
-                    return false;
-                }
-            } else {
-                if (valves.get(1).valveState == Enums.ValveState.OPEN) {
-                    fellThru = Enums.BallFellThru.RIGHT_VALVE;
-                    return true;
-                } else {
-                    return false;
-                }
-            }
+        //if it fell through the right valve
+        else if (overRightValve() && valves.get(1).valveState == Enums.ValveState.OPEN) {
+            fellThru = Enums.BallFellThru.RIGHT_VALVE;
+            return true;
         }
         //if it fell off the end of the ramp
         else if (position.x > (Constants.CHUTE_MARGIN + (3.0f * Constants.RAMP_WIDTH) + (2.0f * Constants.VALVE_WIDTH) + Constants.BALL_SIZE)) {
@@ -173,6 +148,33 @@ public class Ball {
         }
     }
 
+    private boolean overLeftValve() {
+        return position.x > (Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.BALL_SIZE) &&
+                position.x < (Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.VALVE_WIDTH);
+    }
+
+    private boolean overRightValve() {
+        return position.x > (Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) + Constants.VALVE_WIDTH + Constants.BALL_SIZE) &&
+                position.x < (Constants.CHUTE_MARGIN + (2.0f * Constants.RAMP_WIDTH) + (2.0f * Constants.VALVE_WIDTH));
+    }
+
+    private void automateValves(Array<Valve> valves) {
+        //only switch valves if the ball is sitting on top of a valve AND the valve is in the wrong position
+        if (overLeftValve()) {
+            if (ballColor.equals(Constants.BUCKET_LEFT_COLOR)) {
+                if (valves.get(0).valveState == Enums.ValveState.CLOSED) valves.get(0).switchValveState();
+            } else {
+                if (valves.get(0).valveState == Enums.ValveState.OPEN) valves.get(0).switchValveState();
+            }
+        } else if (overRightValve()) {
+            if (ballColor.equals(Constants.BUCKET_MIDDLE_COLOR)) {
+                if (valves.get(1).valveState == Enums.ValveState.CLOSED) valves.get(1).switchValveState();
+            } else {
+                if (valves.get(1).valveState == Enums.ValveState.OPEN) valves.get(1).switchValveState();
+            }
+        }
+    }
+
     private boolean inCorrectBucket() {
         //powerups are always in the correct bucket
         if (ballType == Enums.BallType.POWERUP) {
@@ -180,8 +182,6 @@ public class Ball {
             return true;
         } else {
             switch (fellThru) {
-                case NONE:
-                    return false;
                 case LEFT_VALVE:
                     return ballColor.equals(Constants.BUCKET_LEFT_COLOR);
                 case RIGHT_VALVE:

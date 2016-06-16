@@ -81,9 +81,9 @@ public class BallSortScreen extends ScreenAdapter {
         score = new Score();
         gameState = Enums.GameState.PLAYING_NORMAL;
         lastBallSpawnedTime = TimeUtils.nanoTime();
-        preferences = Gdx.app.getPreferences(this.getClass().getPackage().getName() + ".preferences");
-        highScore = preferences.getLong(Constants.PREF_HIGH_SCORE);
-        highLevel = preferences.getInteger(Constants.PREF_HIGH_LEVEL);
+        preferences = Gdx.app.getPreferences(Constants.PREFERENCES_FILE_NAME);
+        highScore = preferences.getLong(Constants.PREF_KEY_HIGH_SCORE);
+        highLevel = preferences.getInteger(Constants.PREF_KEY_HIGH_LEVEL);
     }
 
     @Override
@@ -96,17 +96,8 @@ public class BallSortScreen extends ScreenAdapter {
                 break;
             case GOTO_NEXT_LEVEL:
                 assets.sounds.playSound(assets.sounds.newLevel);
-                //reset balls, buckets, and combo. increment the level and start the next level timer.
-                combo = 0;
-                level += 1;
-                balls.clear();
-                for (Bucket bucket : buckets) {
-                    bucket.reset(level * Constants.BUCKET_GOAL_PER_LEVEL);
-                }
-                levelChangeStartedTime = TimeUtils.nanoTime();
-                gameState = Enums.GameState.STARTING_NEXT_LEVEL;
-                //save the current highScore and highLevel
-                saveGame();
+                gotoLevel(level + 1);
+                saveGame(); //save AFTER we increment the level
                 break;
             case STARTING_NEXT_LEVEL:
                 //just wait and increment the timer
@@ -114,19 +105,11 @@ public class BallSortScreen extends ScreenAdapter {
                 if (elapsedSeconds >= Constants.LEVEL_START_DELAY) gameState = Enums.GameState.PLAYING_NORMAL;
                 break;
             case GAME_OVER:
-                //similar to GOTO_NEXT_LEVEL
-                saveGame();
                 assets.sounds.playSound(assets.sounds.gameOver);
-                //reset balls, buckets, combo, score, and level and start the next level timer.
+                //similar to GOTO_NEXT_LEVEL, but saveGame is called BEFORE we reset the level
+                saveGame();
                 currentScore = 0;
-                combo = 0;
-                level = 1;
-                balls.clear();
-                for (Bucket bucket : buckets) {
-                    bucket.reset(level * Constants.BUCKET_GOAL_PER_LEVEL);
-                }
-                levelChangeStartedTime = TimeUtils.nanoTime();
-                gameState = Enums.GameState.STARTING_NEXT_LEVEL;
+                gotoLevel(1);
                 break;
         }
 
@@ -175,6 +158,47 @@ public class BallSortScreen extends ScreenAdapter {
         batch.dispose();
     }
 
+    public void gotoHighLevel() {
+        //only go to the highlevel if it's higher than the current level
+        if (highLevel > level) {
+            //increment level to one less than highlevel since GOTO_NEXT_LEVEL will add one
+            level = highLevel - 1;
+            gameState = Enums.GameState.GOTO_NEXT_LEVEL;
+        }
+    }
+
+    public void startPowerup() {
+        assets.sounds.playSound(assets.sounds.powerup);
+        lastPowerupStartedTime = TimeUtils.nanoTime();
+    }
+
+    public boolean isPowerupActive() {
+        return ((TimeUtils.nanoTime() - lastPowerupStartedTime) * MathUtils.nanoToSec) <= Constants.POWERUP_DURATION;
+    }
+
+    private void gotoLevel(int level) {
+        this.level = level;
+        combo = 0;
+        balls.clear();
+        for (Bucket bucket : buckets) {
+            bucket.reset(level * Constants.BUCKET_GOAL_PER_LEVEL);
+        }
+        levelChangeStartedTime = TimeUtils.nanoTime();
+        gameState = Enums.GameState.STARTING_NEXT_LEVEL;
+    }
+
+    private void saveGame() {
+        if (currentScore > highScore) {
+            preferences.putLong(Constants.PREF_KEY_HIGH_SCORE, currentScore);
+            highScore = currentScore;
+        }
+        if (level > highLevel) {
+            preferences.putInteger(Constants.PREF_KEY_HIGH_LEVEL, level);
+            highLevel = level;
+        }
+        preferences.flush();
+    }
+
     private void addNewBall() {
         float elapsedSeconds = MathUtils.nanoToSec * (TimeUtils.nanoTime() - lastBallSpawnedTime);
         if (elapsedSeconds >= nextBallSpawnInterval) {
@@ -193,7 +217,7 @@ public class BallSortScreen extends ScreenAdapter {
     private void removeBalls(float delta) {
         balls.begin();
         for (Ball ball : balls) {
-            //note that we need to pass the valve to each ball so that the balls can check whether
+            //note that we need to pass the valves to each ball so that the balls can check whether
             //they've arrived at a valve which is open
             ball.update(delta, valves);
             if (ball.ballState == Enums.BallState.CAUGHT) {
@@ -201,37 +225,24 @@ public class BallSortScreen extends ScreenAdapter {
                 currentScore += combo;
                 playComboSound();
                 balls.removeValue(ball, false);
-                switch (ball.fellThru) {
-                    case LEFT_VALVE:
-                        if (buckets.get(0).caughtBall()) assets.sounds.playSound(assets.sounds.full);
-                        break;
-                    case RIGHT_VALVE:
-                        if (buckets.get(1).caughtBall()) assets.sounds.playSound(assets.sounds.full);
-                        break;
-                    case END:
-                        if (buckets.get(2).caughtBall()) assets.sounds.playSound(assets.sounds.full);
-                        break;
-                }
+
+                //increment ballcount on the bucket that matches the fellthru enum and play a sound if it's now full
+                if (buckets.get(ball.fellThru.ordinal()).caughtBall()) assets.sounds.playSound(assets.sounds.full);
+
                 //if all three buckets are now full, start a new level
-                if (buckets.get(0).isFull() && buckets.get(1).isFull() && buckets.get(2).isFull()) {
-                    gameState = Enums.GameState.GOTO_NEXT_LEVEL;
+                boolean allBucketsFull = true;
+                for (Bucket bucket : buckets) {
+                    if (!bucket.isFull()) allBucketsFull = false;
                 }
+                if (allBucketsFull) gameState = Enums.GameState.GOTO_NEXT_LEVEL;
+
             } else if (ball.ballState == Enums.BallState.MISSED) {
                 assets.sounds.playSound(assets.sounds.missed);
                 balls.removeValue(ball, false);
                 combo = 0;
                 currentScore = Math.max(0, currentScore - 25);
-                switch (ball.fellThru) {
-                    case LEFT_VALVE:
-                        if (buckets.get(0).missedBall()) gameState = Enums.GameState.GAME_OVER;
-                        break;
-                    case RIGHT_VALVE:
-                        if (buckets.get(1).missedBall()) gameState = Enums.GameState.GAME_OVER;
-                        break;
-                    case END:
-                        if (buckets.get(2).missedBall()) gameState = Enums.GameState.GAME_OVER;
-                        break;
-                }
+                //decrement ballcount on the bucket that matches the fellthru enum and end the game if it's below empty
+                if (buckets.get(ball.fellThru.ordinal()).missedBall()) gameState = Enums.GameState.GAME_OVER;
             }
         }
         balls.end();
@@ -338,36 +349,6 @@ public class BallSortScreen extends ScreenAdapter {
                 ShapeType.Line,
                 Color.GRAY)
         );
-    }
-
-    private void saveGame() {
-        if (currentScore > highScore) {
-            preferences.putLong(Constants.PREF_HIGH_SCORE, currentScore);
-            highScore = currentScore;
-        }
-        if (level > highLevel) {
-            preferences.putInteger(Constants.PREF_HIGH_LEVEL, level);
-            highLevel = level;
-        }
-        preferences.flush();
-    }
-
-    public void goToHighLevel() {
-        //only go to the highlevel if it's higher than the current level
-        if (highLevel > level) {
-            //increment level to one less than highlevel since GOTO_NEXT_LEVEL will add one
-            level = highLevel - 1;
-            gameState = Enums.GameState.GOTO_NEXT_LEVEL;
-        }
-    }
-
-    public void startPowerup() {
-        assets.sounds.playSound(assets.sounds.powerup);
-        lastPowerupStartedTime = TimeUtils.nanoTime();
-    }
-
-    public boolean isPowerupActive() {
-        return ((TimeUtils.nanoTime() - lastPowerupStartedTime) * MathUtils.nanoToSec) <= Constants.POWERUP_DURATION;
     }
 
 }

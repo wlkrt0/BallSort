@@ -30,8 +30,9 @@ public class Enums {
         MISSED
     }
 
+    /* IMPORTANT NOTE! The order and quantity of these enum entries is critical.
+     * Must exactly align with the buckets array since .ordinal() is called as an index on the array  */
     public enum BallFellThru {
-        NONE,
         LEFT_VALVE,
         RIGHT_VALVE,
         END

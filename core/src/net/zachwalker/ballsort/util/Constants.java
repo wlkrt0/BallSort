@@ -6,8 +6,9 @@ import com.badlogic.gdx.graphics.Color;
 public final class Constants {
     public static final String LOG_TAG = "BallSort";
 
-    public static final String PREF_HIGH_SCORE = "highscore";
-    public static final String PREF_HIGH_LEVEL = "highlevel";
+    public static final String PREFERENCES_FILE_NAME = "net.zachwalker.ballsort.preferences";
+    public static final String PREF_KEY_HIGH_SCORE = "highscore";
+    public static final String PREF_KEY_HIGH_LEVEL = "highlevel";
 
     public static final int WORLD_WIDTH = 222;
     public static final int WORLD_HEIGHT = 125;
@@ -16,7 +17,6 @@ public final class Constants {
     public static final float GRAVITY = 7.0f;
 
     public static final float LEVEL_START_DELAY = 10.0f;
-
     public static final float POWERUP_DURATION = 13.5f;
 
     public static final float BALL_SIZE = 5.0f;

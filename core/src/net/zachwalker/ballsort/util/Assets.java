@@ -31,7 +31,7 @@ public class Assets implements Disposable, AssetErrorListener {
         }
         //set loading to be synchronous
         manager.finishLoading();
-
+        //initialize inner class
         sounds = new Sounds(manager);
     }
 
@@ -45,6 +45,7 @@ public class Assets implements Disposable, AssetErrorListener {
         manager.dispose();
     }
 
+    /* Inner class to provide a convenient namespace for sound assets*/
     public class Sounds {
 
         private boolean soundMuted;

@@ -62,7 +62,6 @@ public class Score {
                     false
             );
         }
-
         batch.end();
     }
 

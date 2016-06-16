@@ -72,7 +72,7 @@ public class TouchTargets extends InputAdapter{
         //check the gotoLevel target to see if it was hit (touch point was within its radius)
         if (targetWasHit(viewportPosition, gotoLevelTarget)) {
             assets.sounds.playSound(assets.sounds.button);
-            ballSortScreen.goToHighLevel();
+            ballSortScreen.gotoHighLevel();
         }
 
         //check the toggleSound target to see if it was hit (touch point was within its radius)
@@ -94,7 +94,6 @@ public class TouchTargets extends InputAdapter{
                 assets.sounds.playSound(assets.sounds.valve);
             }
         }
-
         return true;
     }
 

@@ -27,7 +27,7 @@ public class Bucket {
         renderer.end();
     }
 
-    /** Increments this bucket's balls caught. Returns true if it's now full. */
+    /** Increments this bucket's balls caught counter. Returns true if it's now full. */
     public boolean caughtBall() {
         caughtBalls += 1;
         if (caughtBalls == caughtBallsGoal) {
