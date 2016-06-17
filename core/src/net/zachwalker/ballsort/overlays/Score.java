@@ -1,28 +1,23 @@
 package net.zachwalker.ballsort.overlays;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
 import net.zachwalker.ballsort.util.Constants;
 
 
 public class Score {
-    private Viewport viewport;
     private BitmapFont font;
 
     public Score() {
-        viewport = new ScreenViewport();
-        font = new BitmapFont();
+        //font = new BitmapFont();
+        font = new BitmapFont(Gdx.files.internal("consolas.fnt"), Gdx.files.internal("consolas.png"), false);
         font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
     public void render(SpriteBatch batch, long currentScore, long highScore, int level, int combo) {
-        viewport.apply();
-        batch.setProjectionMatrix(viewport.getCamera().combined);
-        batch.begin();
 
         if (currentScore > highScore) highScore = currentScore;
 
@@ -33,8 +28,8 @@ public class Score {
         font.draw(
                 batch,
                 scoreText,
-                viewport.getWorldWidth() - Constants.CHUTE_MARGIN,
-                viewport.getWorldHeight() - Constants.CHUTE_MARGIN,
+                Constants.WORLD_WIDTH - Constants.LABEL_MARGIN,
+                Constants.WORLD_HEIGHT - Constants.LABEL_MARGIN,
                 0,
                 Align.right,
                 false
@@ -45,8 +40,8 @@ public class Score {
         font.draw(
                 batch,
                 levelText,
-                Constants.CHUTE_MARGIN,
-                viewport.getWorldHeight() - Constants.CHUTE_MARGIN
+                Constants.LABEL_MARGIN,
+                Constants.WORLD_HEIGHT - Constants.LABEL_MARGIN
         );
 
         //if the player has 2x or more combos, show the combo text with the current multiplier
@@ -55,18 +50,17 @@ public class Score {
             font.draw(
                     batch,
                     comboText,
-                    viewport.getWorldWidth() / 2.0f,
-                    viewport.getWorldHeight() - Constants.CHUTE_MARGIN,
+                    Constants.WORLD_WIDTH / 2.0f,
+                    Constants.WORLD_HEIGHT - Constants.LABEL_MARGIN,
                     0,
                     Align.center,
                     false
             );
         }
-        batch.end();
     }
 
-    public void resize(int width, int height) {
-        viewport.update(width, height, true);
-        font.getData().setScale(Math.min(width, height) / Constants.SCORE_FONT_SCALE);
+    public void dispose() {
+        font.dispose();
     }
+
 }

@@ -17,11 +17,11 @@ import net.zachwalker.ballsort.util.Constants;
 public class TouchTargets extends InputAdapter{
 
     private Viewport viewport;
-    private Array<Chute> valveTargets;
+    private Array<Rectangle> valveTargets;
     private Array<Valve> valves;
     private Assets assets;
-    private Chute gotoLevelTarget;
-    private Chute toggleSoundTarget;
+    private Rectangle gotoLevelTarget;
+    private Rectangle toggleSoundTarget;
     private BallSortScreen ballSortScreen;
 
     //note that touch targets must be initalized AFTER valves AND assets
@@ -33,10 +33,10 @@ public class TouchTargets extends InputAdapter{
         this.viewport = viewport;
         this.valves = valves;
         this.assets = assets;
-        valveTargets = new Array<Chute>();
+        valveTargets = new Array<Rectangle>();
         //for every valve, add a corresponding touch target
         for (Valve valve : valves) {
-            valveTargets.add(new Chute(
+            valveTargets.add(new Rectangle(
                     valve.positionX - (Constants.VALVE_WIDTH),
                     valve.positionY - (Constants.VALVE_WIDTH * 5.0f),
                     Constants.VALVE_WIDTH * 3.0f,
@@ -45,7 +45,9 @@ public class TouchTargets extends InputAdapter{
                     Constants.TOUCHTARGET_COLOR)
             );
         }
-        gotoLevelTarget = new Chute(
+
+        //add the gotoHighLevel button
+        gotoLevelTarget = new Rectangle(
                 Constants.WORLD_WIDTH - Constants.CHUTE_MARGIN,
                 Constants.WORLD_HEIGHT / 2.0f,
                 Constants.VALVE_WIDTH,
@@ -54,7 +56,9 @@ public class TouchTargets extends InputAdapter{
                 Constants.TOUCHTARGET_COLOR
         );
 
-        toggleSoundTarget = new Chute(
+
+        //add the mute button
+        toggleSoundTarget = new Rectangle(
                 Constants.WORLD_WIDTH - Constants.CHUTE_MARGIN,
                 Constants.WORLD_HEIGHT / 2.0f - 2.0f * Constants.VALVE_WIDTH,
                 Constants.VALVE_WIDTH,
@@ -100,14 +104,15 @@ public class TouchTargets extends InputAdapter{
     //no update method on the TouchTargets, since they aren't going anywhere
 
     public void render(ShapeRenderer renderer) {
-        for (Chute valveTarget : valveTargets) {
+        for (Rectangle valveTarget : valveTargets) {
             valveTarget.render(renderer);
         }
         gotoLevelTarget.render(renderer);
         toggleSoundTarget.render(renderer);
+        drawIconDetails(renderer);
     }
 
-    private boolean targetWasHit(Vector2 viewportPosition, Chute touchTarget) {
+    private boolean targetWasHit(Vector2 viewportPosition, Rectangle touchTarget) {
         Vector2 targetCenter = new Vector2(
                 touchTarget.positionX + touchTarget.width / 2.0f,
                 touchTarget.positionY + touchTarget.height / 2.0f
@@ -115,6 +120,76 @@ public class TouchTargets extends InputAdapter{
         float targetRadius = Math.min(touchTarget.width, touchTarget.height) / 2.0f;
         //check the touchTarget to see if it was hit (touch point was within its radius)
         return (viewportPosition.dst(targetCenter) <= targetRadius);
+    }
+
+    /* draw insides of gotoLevel and mute buttons.
+    verbose but avoids use of textures altogether in this version */
+    private void drawIconDetails(ShapeRenderer renderer) {
+        renderer.begin(ShapeType.Line);
+        renderer.setColor(Constants.TOUCHTARGET_COLOR);
+
+        //draw fast forward icon (two triangles)
+        renderer.triangle(
+                gotoLevelTarget.positionX + 3.0f,
+                gotoLevelTarget.positionY + 5.0f,
+                gotoLevelTarget.positionX + 3.0f,
+                gotoLevelTarget.positionY + 15.0f,
+                gotoLevelTarget.positionX + 10.0f,
+                gotoLevelTarget.positionY + 10.0f
+        );
+        renderer.triangle(
+                gotoLevelTarget.positionX + 10.0f,
+                gotoLevelTarget.positionY + 5.0f,
+                gotoLevelTarget.positionX + 10.0f,
+                gotoLevelTarget.positionY + 15.0f,
+                gotoLevelTarget.positionX + 17.0f,
+                gotoLevelTarget.positionY + 10.0f
+        );
+
+        //draw mute / toggle sound icon (six lines)
+        //left line
+        renderer.line(
+                toggleSoundTarget.positionX + 5.0f,
+                toggleSoundTarget.positionY + 8.0f,
+                toggleSoundTarget.positionX + 5.0f,
+                toggleSoundTarget.positionY + 12.0f
+        );
+        //right line
+        renderer.line(
+                toggleSoundTarget.positionX + 13.0f,
+                toggleSoundTarget.positionY + 3.0f,
+                toggleSoundTarget.positionX + 13.0f,
+                toggleSoundTarget.positionY + 17.0f
+        );
+        //top line
+        renderer.line(
+                toggleSoundTarget.positionX + 5.0f,
+                toggleSoundTarget.positionY + 12.0f,
+                toggleSoundTarget.positionX + 8.0f,
+                toggleSoundTarget.positionY + 12.0f
+        );
+        //bottom line
+        renderer.line(
+                toggleSoundTarget.positionX + 5.0f,
+                toggleSoundTarget.positionY + 8.0f,
+                toggleSoundTarget.positionX + 8.0f,
+                toggleSoundTarget.positionY + 8.0f
+        );
+        //top diagonal
+        renderer.line(
+                toggleSoundTarget.positionX + 8.0f,
+                toggleSoundTarget.positionY + 12.0f,
+                toggleSoundTarget.positionX + 13.0f,
+                toggleSoundTarget.positionY + 17.0f
+        );
+        //bottom diagonal
+        renderer.line(
+                toggleSoundTarget.positionX + 8.0f,
+                toggleSoundTarget.positionY + 8.0f,
+                toggleSoundTarget.positionX + 13.0f,
+                toggleSoundTarget.positionY + 3.0f
+        );
+        renderer.end();
     }
 
 }

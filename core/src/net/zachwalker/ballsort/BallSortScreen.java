@@ -12,10 +12,10 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.DelayedRemovalArray;
 import com.badlogic.gdx.utils.TimeUtils;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import net.zachwalker.ballsort.entities.Bucket;
-import net.zachwalker.ballsort.entities.Chute;
+import net.zachwalker.ballsort.entities.Rectangle;
 import net.zachwalker.ballsort.entities.TouchTargets;
 import net.zachwalker.ballsort.entities.Valve;
 import net.zachwalker.ballsort.overlays.Score;
@@ -32,7 +32,7 @@ public class BallSortScreen extends ScreenAdapter {
     private ShapeRenderer renderer;
     private SpriteBatch batch;
     private DelayedRemovalArray<Ball> balls;
-    private Array<Chute> chutes;
+    private Array<Rectangle> chutes;
     private Array<Bucket> buckets;
     private Array<Valve> valves;
     private TouchTargets touchTargets;
@@ -59,11 +59,11 @@ public class BallSortScreen extends ScreenAdapter {
     public void show() {
         level = 1;
         assets = new Assets();
-        viewport = new ExtendViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
+        viewport = new FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
         renderer = new ShapeRenderer();
         batch = new SpriteBatch();
         balls = new DelayedRemovalArray<Ball>();
-        chutes = new Array<Chute>();
+        chutes = new Array<Rectangle>();
         initializeChutes();
         buckets = new Array<Bucket>();
         //note that level must be set before initializing buckets since they use it to calc goal
@@ -129,8 +129,8 @@ public class BallSortScreen extends ScreenAdapter {
             ball.render(renderer);
         }
 
-        for (Chute chute : chutes) {
-            chute.render(renderer);
+        for (Rectangle rectangle : chutes) {
+            rectangle.render(renderer);
         }
 
         for (Bucket bucket : buckets) {
@@ -143,19 +143,23 @@ public class BallSortScreen extends ScreenAdapter {
 
         touchTargets.render(renderer);
 
+        //draw sprites (including BitmapFonts)
+        batch.setProjectionMatrix(viewport.getCamera().combined);
+        batch.begin();
         score.render(batch, currentScore, highScore, level, combo);
+        batch.end();
     }
 
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
-        score.resize(width, height);
     }
 
     @Override
     public void dispose() {
         renderer.dispose();
         batch.dispose();
+        score.dispose();
     }
 
     public void gotoHighLevel() {
@@ -284,7 +288,7 @@ public class BallSortScreen extends ScreenAdapter {
         buckets.add(new Bucket(rightBucketX, Constants.BUCKET_RIGHT_COLOR, level * Constants.BUCKET_GOAL_PER_LEVEL));
 
         //draw the left STATIC (empty outline) bucket
-        chutes.add(new Chute(
+        chutes.add(new Rectangle(
                 leftBucketX,
                 0.0f,
                 Constants.BUCKET_WIDTH,
@@ -293,7 +297,7 @@ public class BallSortScreen extends ScreenAdapter {
                 Constants.BUCKET_LEFT_COLOR)
         );
         //draw the middle STATIC (empty outline) bucket
-        chutes.add(new Chute(
+        chutes.add(new Rectangle(
                 middleBucketX,
                 0.0f,
                 Constants.BUCKET_WIDTH,
@@ -302,7 +306,7 @@ public class BallSortScreen extends ScreenAdapter {
                 Constants.BUCKET_MIDDLE_COLOR)
         );
         //draw the right STATIC (empty outline) bucket
-        chutes.add(new Chute(
+        chutes.add(new Rectangle(
                 rightBucketX,
                 0.0f,
                 Constants.BUCKET_WIDTH,
@@ -314,40 +318,49 @@ public class BallSortScreen extends ScreenAdapter {
 
     private void initializeChutes() {
         //draw the vertical chute
-        chutes.add(new Chute(
+        chutes.add(new Rectangle(
                 Constants.CHUTE_MARGIN,
                 0.0f,
                 Constants.CHUTE_WIDTH,
                 Constants.CHUTE_HEIGHT,
                 ShapeType.Line,
-                Color.GRAY)
+                Constants.CHUTE_COLOR)
         );
-        //draw the left horizontal chute
-        chutes.add(new Chute(
+        //draw the left horizontal chute (ramp)
+        chutes.add(new Rectangle(
                 Constants.CHUTE_MARGIN,
                 Constants.CHUTE_HEIGHT,
                 Constants.RAMP_WIDTH,
                 Constants.CHUTE_WIDTH,
                 ShapeType.Line,
-                Color.GRAY)
+                Constants.CHUTE_COLOR)
         );
-        //draw the middle horizontal chute
-        chutes.add(new Chute(
+        //draw the middle horizontal chute (ramp)
+        chutes.add(new Rectangle(
                 Constants.CHUTE_MARGIN + Constants.RAMP_WIDTH + Constants.VALVE_WIDTH,
                 Constants.CHUTE_HEIGHT,
                 Constants.RAMP_WIDTH,
                 Constants.CHUTE_WIDTH,
                 ShapeType.Line,
-                Color.GRAY)
+                Constants.CHUTE_COLOR)
         );
-        //draw the right horizontal chute
-        chutes.add(new Chute(
+        //draw the right horizontal chute (ramp)
+        chutes.add(new Rectangle(
                 Constants.CHUTE_MARGIN + (2.0f * (Constants.RAMP_WIDTH + Constants.VALVE_WIDTH)),
                 Constants.CHUTE_HEIGHT,
                 Constants.RAMP_WIDTH,
                 Constants.CHUTE_WIDTH,
                 ShapeType.Line,
-                Color.GRAY)
+                Constants.CHUTE_COLOR)
+        );
+        //draw the ground
+        chutes.add(new Rectangle(
+                0.0f,
+                0.0f,
+                Constants.WORLD_WIDTH,
+                0.0f,
+                ShapeType.Line,
+                Constants.CHUTE_COLOR)
         );
     }
 

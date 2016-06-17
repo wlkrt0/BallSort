@@ -17,7 +17,7 @@ public class Bucket {
         this.caughtBallsGoal = caughtBallsGoal;
     }
 
-    //no update method on the Chute, since it isn't going anywhere
+    //no update method on the Rectangle, since it isn't going anywhere
 
     public void render(ShapeRenderer renderer) {
         renderer.begin(ShapeRenderer.ShapeType.Filled);
